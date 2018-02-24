@@ -37,6 +37,7 @@ Vamos cobrir os seguintes pontos:
 - Ports e SOs
 - Performance
 - Compilador e Ferramentas
+- Biblioteca Padrão
 - Comunidade
 
 * Mudanças na Linguagem
@@ -121,11 +122,11 @@ macOS agora suporta Go plugins. Windows ainda não, veja a issue [[https://githu
 
 * Compilador e Ferramentas - gofmt
 
-Expressões em slices usando agora são sempre formatadas como:
+Expressões de três índices em slices, em que algum dos índices contenha uma expressão complexa, agora são sempre formatadas como:
 
  slice[start+1 : stop : capacity]
 
-Métodos de uma linha não são mais quebrados em multiplas linhas:
+Métodos de uma linha em interfaces literais não são mais quebrados em múltiplas linhas:
 
     if c, ok := v.(interface {
         Close() error
@@ -155,7 +156,7 @@ se torna:
         /* lone comment */
     }
 
-*Atenção*: o `gofmt` não é coberto pelas mesmas garantias do Go 1 em si, cuidado ao usar ele no CI.
+*Atenção*: o `gofmt` não é coberto pelas mesmas garantias do Go 1 em si, cuidado ao usar ele em CI.
 
 * Compilador e Ferramentas - go fix
 
@@ -163,9 +164,9 @@ se torna:
 
  go tool fix -r context your/package
 
-* Standard Library
+* Biblioteca Padrão 
 
-* Standard Library
+* Biblioteca Padrão
 
 - Nenhum pacote novo
 - Novo tipo `strings.Builder` pra usar no lugar de `bytes.Buffer` em alguns momentos
@@ -180,7 +181,7 @@ se torna:
 
 .link http://go-meetups.appspot.com http://go-meetups.appspot.com
 
-* Comunidade - Conferencias sobre Go ou com trilhas sobre Go no Brasil em 2018:
+* Comunidade - Conferências sobre Go ou com trilhas sobre Go no Brasil em 2018:
 
 - GopherCon Brasil 2018, [[https://2018.gopherconbr.org]]
 - TDC Floripa, [[http://www.thedevelopersconference.com.br]]
