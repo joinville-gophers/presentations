@@ -1,0 +1,208 @@
+Go 1.10 Release Party
+Joinville Go Meetup
+27 Feb 2017
+
+Carlos Alexandro Becker
+@caarlos0
+
+* Licença e Materiais
+
+.link https://creativecommons.org/licenses/by-sa/4.0/ Creative Commons Attribution-ShareAlike 4.0 International licence
+
+# .link https://github.com/caarlos0/talks/tree/master/2018/go-1.10-release-party
+
+Sinta-se encorajado a reutilizar, transformar ou construir usando esse material como base, desde que você utilize a mesma licença.
+
+Essa apresentação é baseada na [[https://github.com/dlsniper/talks/tree/master/2018/go-1.10-release-party][apresentação]] do [[https://github.com/dlsniper][Florin Pățan]] no Go London Meetup.
+
+* Go 1.10
+
+* Go 1.10
+
+Go 1.10 foi lançado!
+
+.image img/rocket.jpg _ 350
+
+.link https://blog.golang.org/go1.10 Anúncio
+
+Go 1.10 é a *11a*release* do Go 1.
+
+.link http://golang.org/doc/go1.10 Notas da versão
+
+* O que mudou?
+
+Vamos cobrir os seguintes pontos:
+
+- Mudanças na linguagem
+- Ports e SOs
+- Performance
+- Compilador e Ferramentas
+- Comunidade
+
+* Mudanças na Linguagem
+
+* Mudanças na Linguagem
+
+Não houve nenhuma mudança significativa!
+
+.image img/desert.jpg _ 800
+
+* Ports e SOs
+
+* Ports e SOs
+
+Nenhum port novo, mas...
+
+- Não suporta mais FreeBSD < 10.3
+- Última release a funcionar no OpenBSD 6.0
+- Última release a suportar macOS < 10.10 (yosemite)
+- Última release a suportar Windows XP e Vista
+- Go agora funciona novamente no NetBSD, mas requer o ainda-não-lançado NetBSD 8 e `GOARCH` `amd64` ou `386`
+- Nova env `GOMIPS` para MIPS 32-bits
+
+* Performance
+
+* Performance
+
+- Continua rápido como antes!
+- Tempo de compilação da stdlib 10% menor!
+
+* Performance
+
+.image img/go1.5.png _ 800
+
+* Performance
+
+.image img/go1.6.png _ 800
+
+* Performance
+
+.image img/go1.6.3.png _ 800
+
+* Performance
+
+.image img/go1.7.png _ 800
+
+* Performance
+
+.image img/go1.8.png _ 800
+
+* Performance
+
+.image img/go1.9.png _ 800
+
+* Performance
+
+.image img/go1.10.png _ 800
+
+* Compilador e Ferramentas
+
+* Compilador e Ferramentas - Cache
+
+`go`build` e `go`test` agora mantém cache!
+
+Isso significa que se você rodar `go`test` várias vezes sem alterar o código do pacote ou de algum teste, o resultado da execução anterior vai ser exibido (com um *cached* no lado)!
+
+* Compilador e Ferramentas
+
+`go`vet` agora roda junto com `go`test` parar ajudar a previnir alguns erros comuns.
+
+Agora é possível é possível usar a flag `-coverpkg` para medir a cobertura dos testes de multiplos pacotes:
+
+ go test -coverpkg=./... -coverprofile cover.out ./...
+
+Temos também a flag `-failfast` pra parar os testes no primeiro erro ao invés de continuar executando.
+
+* Compilador e Ferramentas
+
+Windows agora suporta `c-shared`archives` (aka DLLs)
+
+macOS agora suporta Go plugins. Windows ainda não, veja a issue [[https://github.com/golang/go/issues/19282][#19282]].
+
+* Compilador e Ferramentas - gofmt
+
+Expressões em slices usando agora são sempre formatadas como:
+
+ slice[start+1 : stop : capacity]
+
+Métodos de uma linha não são mais quebrados em multiplas linhas:
+
+    if c, ok := v.(interface {
+        Close() error
+    }); ok {
+    }
+
+pode ser escrito como:
+
+    if c, ok := v.(interface{ Close() error }); ok {
+    }
+
+* Compilador e Ferramentas - gofmt
+
+Se um literal composto conter apenas comentários, os comentários agora são indentados:
+
+    var _ = []T{/* lone comment */}
+
+    var _ = []T{
+    /* lone comment */
+    }
+
+se torna:
+
+    var _ = []T{ /* lone comment */ }
+
+    var _ = []T{
+        /* lone comment */
+    }
+
+*Atenção*: o `gofmt` não é coberto pelas mesmas garantias do Go 1 em si, cuidado ao usar ele no CI.
+
+* Compilador e Ferramentas - go fix
+
+`go`fix` agora substitui os imports de `golang.org/x/net/context` para `context`, o que deve te ajudar a migrar seu código pra go 1.9+
+
+ go tool fix -r context your/package
+
+* Standard Library
+
+* Standard Library
+
+- Nenhum pacote novo
+- Novo tipo `strings.Builder` pra usar no lugar de `bytes.Buffer` em alguns momentos
+- Unicode, emojis e etc
+- Várias outras pequenas mudanças, veja [[https://golang.org/doc/go1.10#minor_library_changes][a lista completa]].
+
+* Comunidade
+
+* Comunidade - Meetups
+
+.image img/meetups.png _ 800
+
+.link http://go-meetups.appspot.com http://go-meetups.appspot.com
+
+* Comunidade - Conferencias sobre Go ou com trilhas sobre Go no Brasil em 2018:
+
+- GopherCon Brasil 2018, [[https://2018.gopherconbr.org]]
+- TDC Floripa, [[http://www.thedevelopersconference.com.br]]
+- ?
+
+* Comunidade - Recursos
+
+Lista de todas as conferências sobre Go:
+.link ttps://github.com/golang/go/wiki/Conferences
+
+Lista de todos os Go meetups:
+.link https://go-meetups.appspot.com
+
+Recursos para novos palestrantes:
+.link https://github.com/golang/go/wiki/NewSpeakers
+
+
+* Conclusion
+
+.image img/party-gopher.png
+
+Atualize pro Go 1.10!
+
+É a melhor versão do Go, _até_agora_.
+
