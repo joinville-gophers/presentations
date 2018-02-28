@@ -1,0 +1,376 @@
+Introdução à gRPC em Go
+27 Feb 2018
+Tags: go, golang, grpc
+
+Rodrigo Bahiense
+CTO, Controller Education
+zugl@outlook.com
+https://github.com/zugl
+
+* O que é gRPC?
+
+* Significado do nome
+
+- *RPC*: Remote Procedure Call;
+- *gRPC*: gRPC Remote Procedure Calls ([[https://grpc.io/faq/][grpc / FAQ]]).
+
+* O que faz?
+
+Permite a comunicação transparente de *messages* entre *clients* e *servers* através do protocolo *HTTP/2*.
+
+- *Message*: pacote de dados *protobuf* (binário ou texto);
+- *Client*: solicita a execução dum RPC num server através duma message chamada *request*;
+- *Server*: executa um RPC solicitado por um client e lhe envia uma message chamada *response*;
+
+Um RPC termina quando:
+
+- Ambos os lados terminam de enviar messages;
+- Algum lado se desconecta;
+- O RPC é cancelado ou excede o tempo limite de resposta.
+
+* Modos de operação
+
+- *Simple*: o client envia um request e aguarda o response do server;
+- *Stream*.
+
+Tipos de Stream:
+
+- *Client-Side*: o client envia um ou mais requests e o server envia apenas um response;
+- *Server-Side*: o client envia um request e o server envia um ou mais responses;
+- *Bidirectional*: ambos client e server podem enviar um ou mais requests/responses.
+
+* Simple RPC
+
+.image img/introducao_a_grpc_em_go/rpc-1.png
+
+* Stream RPC
+
+.image img/introducao_a_grpc_em_go/rpc-2.png
+
+* Protobuf (Protocol Buffers)
+
+A partir de um arquivo de definições, o compilador protobuf (protoc) gera código que pode ser importado em seu projeto.
+
+Atualmente o gRPC suporta código gerado para várias linguagens, dentre elas:
+
+- C++
+- C#
+- Go
+- Java
+- Objective-C
+- Python
+
+* Simple RPC
+
+* Arquivo de definições
+
+    syntax = "proto3";
+
+    service GoMeetup {
+        // Echo retorna a mensagem enviada.
+        rpc Echo (EchoRequest) returns (EchoResponse) {};
+    }
+
+    message EchoRequest {
+        string input = 1;
+    }
+
+    message EchoResponse {
+        string output = 1;
+    }
+
+* Código gerado
+
+- EchoRequest
+
+    type EchoRequest struct {
+        Input string `protobuf:"bytes,1,opt,name=input" json:"input,omitempty"`
+    }
+
+- EchoResponse
+
+    type EchoResponse struct {
+        Output string `protobuf:"bytes,1,opt,name=output" json:"output,omitempty"`
+    }
+
+* Código gerado
+
+- GoMeetupClient
+
+    type GoMeetupClient interface {
+        // Echo retorna a mensagem enviada.
+        Echo(ctx context.Context, in *EchoRequest, opts ...grpc.CallOption) (*EchoResponse, error)
+    }
+
+- GoMeetupServer
+
+    type GoMeetupServer interface {
+        // Echo retorna a mensagem enviada.
+        Echo(context.Context, *EchoRequest) (*EchoResponse, error)
+    }
+
+* Implementação do método *GoMeetupServer.Echo
+
+    // GoMeetupServer deve satisfazer a interface gomeetup_pb.GoMeetupServer.
+    type GoMeetupServer struct{}
+
+    // Echo recebe uma string e retorna ela.
+    func (s *GoMeetupServer) Echo(
+        ctx context.Context, in *gomeetup_pb.EchoRequest,
+    ) (
+        *gomeetup_pb.EchoResponse, error,
+    ) {
+        out := &gomeetup_pb.EchoResponse{
+            Output: in.Input,
+        }
+        return out, nil
+    }
+
+* Execução de GoMeetupClient.Echo
+
+    client := gomeetup_pb.NewGoMeetupClient(conn)
+
+    req := &gomeetup_pb.EchoRequest{
+        Input: "Hey!",
+    }
+
+    resp, err := client.Echo(context.Background(), req)
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    log.Printf("resp: %+v\n", resp)
+
+* Resultado
+
+    resp: output:"Hey!"
+
+* Stream RPC (Server-Side)
+
+* Arquivo de definições
+
+    syntax = "proto3";
+
+    service GoMeetup {
+        // Echo retorna a mensagem enviada.
+        rpc Echo (EchoRequest) returns (EchoResponse) {};
+
+        // EchoStream retorna três vezes a mensagem enviada.
+        rpc EchoStream (EchoRequest) returns (stream EchoResponse) {};
+    }
+
+    message EchoRequest {
+        string input = 1;
+    }
+
+    message EchoResponse {
+        string output = 1;
+    }
+
+* Código gerado
+
+- GoMeetupClient
+
+    type GoMeetupClient interface {
+        // Echo retorna a mensagem enviada.
+        Echo(ctx context.Context, in *EchoRequest, opts ...grpc.CallOption) (*EchoResponse, error)
+        // EchoStream retorna três vezes a mensagem enviada.
+        EchoStream(ctx context.Context, in *EchoRequest, opts ...grpc.CallOption) (
+            GoMeetup_EchoStreamClient, error,
+        )
+    }
+
+- GoMeetupServer
+
+    type GoMeetupServer interface {
+        // Echo retorna a mensagem enviada.
+        Echo(context.Context, *EchoRequest) (*EchoResponse, error)
+        // EchoStream retorna três vezes a mensagem enviada.
+        EchoStream(*EchoRequest, GoMeetup_EchoStreamServer) error
+    }
+
+* Código gerado
+
+- GoMeetup_EchoStreamClient
+
+    type GoMeetup_EchoStreamClient interface {
+        Recv() (*EchoResponse, error)
+        grpc.ClientStream
+    }
+
+- GoMeetup_EchoStreamServer
+
+    type GoMeetup_EchoStreamServer interface {
+        Send(*EchoResponse) error
+        grpc.ServerStream
+    }
+
+* Implementação de *GoMeetupServer.EchoStream
+
+    // EchoStream recebe uma string e retorna ela 3 vezes.
+    func (s *GoMeetupServer) EchoStream(
+        in *gomeetup_pb.EchoRequest, stream gomeetup_pb.GoMeetup_EchoStreamServer,
+    ) error {
+        out := &gomeetup_pb.EchoResponse{
+            Output: in.Input,
+        }
+
+        for i := 0; i < 3; i++ {
+            if err := stream.Send(out); err != nil {
+                return err
+            }
+        }
+
+        return nil
+    }
+
+* Execução de GoMeetupClient.EchoStream
+
+    client := gomeetup_pb.NewGoMeetupClient(conn)
+
+    req := &gomeetup_pb.EchoRequest{
+        Input: "Ho!",
+    }
+
+    stream, err := client.EchoStream(context.Background(), req)
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    for {
+        resp, err := stream.Recv()
+        if err == io.EOF {
+            break
+        }
+        if err != nil {
+            log.Fatal(err)
+        }
+        log.Printf("resp: %+v\n", resp)
+    }
+
+* Resultado
+
+    resp: output:"Ho!"
+    resp: output:"Ho!"
+    resp: output:"Ho!"
+
+* Cancelamento
+
+* Como funciona
+
+- É passado através do *context* do RPC;
+- Tanto clients quanto servers podem cancelar um RPC a qualquer momento;
+- Encerra o RPC imediatamente, de forma que nenhum processamento posterior é feito;
+- Não faz _rollback_ de qualquer ação, apenas interrompe a execução do RPC;
+- Pode ser propagado para o package sql (se o driver suportar) e cancelar a execução de uma query no DB quando o RPC é cancelado.
+
+* Exemplo
+
+.image img/introducao_a_grpc_em_go/rpc-3.png
+
+* Exemplo
+
+.image img/introducao_a_grpc_em_go/rpc-4.png
+
+* Implementação de *GoMeetupServer.EchoStream
+
+    ...
+
+    for i := 0; i < 3; i++ {
+        if err := stream.Send(out); err != nil {
+            return err
+        }
+        time.Sleep(time.Second)
+    }
+
+    ...
+
+* Execução de GoMeetupClient.EchoStream
+
+    ...
+
+    // Cria uma função de cancelamento para o contexto
+    // que retorna após 2 segundos.
+    ctx, cancel := context.WithTimeout(
+        context.Background(),
+        2*time.Second,
+    )
+    defer cancel()
+
+    // stream satisfaz a interface gomeetup_pb.GoMeetup_EchoStreamClient.
+    stream, err := client.EchoStream(ctx, req)
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    ...
+
+* Resultado
+
+    resp: output:"Ho!"
+    resp: output:"Ho!"
+    rpc error: code = DeadlineExceeded desc = context deadline exceeded
+
+* gRPC Gateway
+
+* Sobre
+
+- É um plugin para o compilador protobuf;
+- Gera código para a execução de um reverse-proxy server que traduz requests JSON para requests gRPC;
+- Suporte parcial a Streaming;
+- Pode gerar definições Swagger.
+
+* Diagrama
+
+.image img/introducao_a_grpc_em_go/grpc-gateway.png
+
+* Arquivo de definições
+
+    syntax = "proto3";
+
+    import "google/api/annotations.proto";
+
+    service GoMeetup {
+        // Echo retorna a mensagem enviada.
+        rpc Echo (EchoRequest) returns (EchoResponse) {
+            option (google.api.http) = {
+                post: "/GoMeetup/Echo"
+                body: "*"
+            };
+        };
+
+        // EchoStream retorna três vezes a mensagem enviada.
+        rpc EchoStream (EchoRequest) returns (stream EchoResponse) {};
+    }
+
+    message EchoRequest {
+        string input = 1;
+    }
+
+    message EchoResponse {
+        string output = 1;
+    }
+
+* Representações JSON
+
+- Request
+
+    {
+        "input": "Hey!"
+    }
+
+- Response
+
+    {
+        "output": "Hey!"
+    }
+
+* Perguntas?
+
+* Links:
+
+- *Protobuf*: [[https://developers.google.com/protocol-buffers/]]
+- *gRPC*: [[https://grpc.io]]
+- *HTTP/2*: [[https://en.wikipedia.org/wiki/HTTP/2]]
+- *context*: [[https://golang.org/pkg/context/]]
+- *gRPC-Gateway*: [[https://github.com/grpc-ecosystem/grpc-gateway]]
